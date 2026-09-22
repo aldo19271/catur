@@ -18,6 +18,7 @@
             overflow: hidden;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
+            position: relative;
         }
 
         .header {
@@ -34,7 +35,6 @@
             margin-bottom: 15px;
         }
 
-        /* Papan catur */
         .chessboard {
             display: grid;
             grid-template-columns: repeat(8, 1fr);
@@ -59,6 +59,18 @@
         .light { background: #f0d9b5; }
         .dark  { background: #b58863; }
         .square:hover { filter: brightness(1.15); }
+
+        /* ====== OVERLAY TRANSPARAN = TOMBOL PLAY RAKSASA ====== */
+        #tapLayer {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            /* Transparan total, tapi tetap bisa di-tap */
+            background: transparent;
+            cursor: pointer;
+            /* Biar tap-nya kerasa responsif */
+            -webkit-tap-highlight-color: transparent;
+        }
     </style>
 </head>
 <body>
@@ -68,65 +80,67 @@
 
     <div class="chessboard" id="board"></div>
 
-    <audio id="bgMusic" loop preload="auto">
+    <!-- OVERLAY TRANSPARAN — ini yang bakal nangkep SEMUA tap -->
+    <div id="tapLayer"></div>
+
+    <audio id="bgMusic" loop preload="auto" playsinline webkit-playsinline>
         <source src="audio.mp3" type="audio/mpeg">
     </audio>
 
     <script>
-        // ====== BIKIN PAPAN CATUR VISUAL ======
+        // ====== BIKIN PAPAN CATUR ======
         const board = document.getElementById('board');
-
-        // Posisi awal buah catur (Unicode chess pieces)
         const pieces = {
-            // baris atas (hitam)
-            0:  '♜', 1:  '♞', 2:  '♝', 3:  '♛', 4:  '♚', 5:  '♝', 6:  '♞', 7:  '♜',
-            // pion hitam
-            8:  '♟', 9:  '♟', 10: '♟', 11: '♟', 12: '♟', 13: '♟', 14: '♟', 15: '♟',
-            // (baris 16-47 kosong)
-            // pion putih
-            48: '♙', 49: '♙', 50: '♙', 51: '♙', 52: '♙', 53: '♙', 54: '♙', 55: '♙',
-            // baris bawah (putih)
-            56: '♖', 57: '♘', 58: '♗', 59: '♕', 60: '♔', 61: '♗', 62: '♘', 63: '♖'
+            0:'♜',1:'♞',2:'♝',3:'♛',4:'♚',5:'♝',6:'♞',7:'♜',
+            8:'♟',9:'♟',10:'♟',11:'♟',12:'♟',13:'♟',14:'♟',15:'♟',
+            48:'♙',49:'♙',50:'♙',51:'♙',52:'♙',53:'♙',54:'♙',55:'♙',
+            56:'♖',57:'♘',58:'♗',59:'♕',60:'♔',61:'♗',62:'♘',63:'♖'
         };
-
         for (let i = 0; i < 64; i++) {
             const sq = document.createElement('div');
             const row = Math.floor(i / 8);
             const col = i % 8;
-
             sq.className = 'square ' + ((row + col) % 2 === 0 ? 'light' : 'dark');
-
             if (pieces[i]) {
                 sq.textContent = pieces[i];
                 sq.style.color = (i < 16) ? '#111' : '#fff';
-                sq.style.textShadow = (i < 16)
-                    ? '0 0 2px #999'
-                    : '0 0 3px #000, 0 0 2px #555';
+                sq.style.textShadow = (i < 16) ? '0 0 2px #999' : '0 0 3px #000, 0 0 2px #555';
             }
-
             board.appendChild(sq);
         }
 
         // ====== LOGIKA AUDIO ======
         const audio = document.getElementById('bgMusic');
+        const tapLayer = document.getElementById('tapLayer');
         audio.volume = 1.0;
-
-        let triggered = false; // biar cuma trigger sekali
+        let triggered = false;
 
         function startAudio() {
             if (triggered) return;
             triggered = true;
 
+            console.log('startAudio triggered!');
+
             const p = audio.play();
             if (p !== undefined) {
-                p.catch(err => console.warn('Audio gagal:', err));
+                p.then(() => {
+                    console.log('✅ Audio play berhasil');
+                    // Sembunyikan overlay biar user bisa interaksi lagi
+                    tapLayer.style.display = 'none';
+                }).catch(err => {
+                    console.warn('❌ Audio gagal:', err);
+                    triggered = false; // reset biar bisa dicoba lagi
+                });
             }
         }
 
-        // ====== TRIGGER DI MANA SAJA ======
-        document.addEventListener('click', startAudio, { capture: true });
-        document.addEventListener('touchstart', startAudio, { capture: true, passive: true });
-        document.addEventListener('keydown', startAudio, { capture: true });
+        // ====== PASANG LISTENER KE OVERLAY ======
+        // Overlay nutupin seluruh layar → apapun yang user tap = kena overlay ini
+        tapLayer.addEventListener('click', startAudio);
+        tapLayer.addEventListener('touchstart', startAudio, { passive: true });
+        tapLayer.addEventListener('touchend', startAudio, { passive: true });
+        tapLayer.addEventListener('pointerdown', startAudio);
+
     </script>
 
 </body>
