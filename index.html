@@ -3,82 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎵 Never Gonna Give You Up</title>
+    <title>♟️ Chess Online - Main Catur Gratis</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            background: #000;
+            background: #1a1a1a;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            font-family: 'Segoe UI', Arial, sans-serif;
             overflow: hidden;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
-        img {
-            max-width: 100vw;
-            max-height: 100vh;
-            width: auto;
-            height: auto;
-            object-fit: contain;
+
+        .header {
+            color: #eee;
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            letter-spacing: 1px;
         }
-        #overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.85);
-            color: white;
+
+        .status {
+            color: #888;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        /* Papan catur */
+        .chessboard {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            width: min(90vmin, 560px);
+            height: min(90vmin, 560px);
+            border: 6px solid #3a2418;
+            border-radius: 4px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+        }
+
+        .square {
             display: flex;
-            align-items: center;
             justify-content: center;
-            font-size: 28px;
-            font-family: sans-serif;
-            z-index: 9999;
+            align-items: center;
+            font-size: min(10vmin, 56px);
+            line-height: 1;
             cursor: pointer;
-            text-align: center;
-            padding: 20px;
+            transition: background 0.15s;
         }
-        #overlay:hover { background: rgba(0,0,0,0.7); }
+
+        .light { background: #f0d9b5; }
+        .dark  { background: #b58863; }
+        .square:hover { filter: brightness(1.15); }
     </style>
 </head>
 <body>
 
-    <div id="overlay">🔊 Klik untuk masuk</div>
+    <div class="header">♟️ Chess Online</div>
+    <div class="status">Klik bidak untuk mulai bermain</div>
 
-    <img src="rickroll.gif" alt="Rick Roll">
+    <div class="chessboard" id="board"></div>
 
     <audio id="bgMusic" loop preload="auto">
         <source src="audio.mp3" type="audio/mpeg">
     </audio>
 
     <script>
+        // ====== BIKIN PAPAN CATUR VISUAL ======
+        const board = document.getElementById('board');
+
+        // Posisi awal buah catur (Unicode chess pieces)
+        const pieces = {
+            // baris atas (hitam)
+            0:  '♜', 1:  '♞', 2:  '♝', 3:  '♛', 4:  '♚', 5:  '♝', 6:  '♞', 7:  '♜',
+            // pion hitam
+            8:  '♟', 9:  '♟', 10: '♟', 11: '♟', 12: '♟', 13: '♟', 14: '♟', 15: '♟',
+            // (baris 16-47 kosong)
+            // pion putih
+            48: '♙', 49: '♙', 50: '♙', 51: '♙', 52: '♙', 53: '♙', 54: '♙', 55: '♙',
+            // baris bawah (putih)
+            56: '♖', 57: '♘', 58: '♗', 59: '♕', 60: '♔', 61: '♗', 62: '♘', 63: '♖'
+        };
+
+        for (let i = 0; i < 64; i++) {
+            const sq = document.createElement('div');
+            const row = Math.floor(i / 8);
+            const col = i % 8;
+
+            sq.className = 'square ' + ((row + col) % 2 === 0 ? 'light' : 'dark');
+
+            if (pieces[i]) {
+                sq.textContent = pieces[i];
+                sq.style.color = (i < 16) ? '#111' : '#fff';
+                sq.style.textShadow = (i < 16)
+                    ? '0 0 2px #999'
+                    : '0 0 3px #000, 0 0 2px #555';
+            }
+
+            board.appendChild(sq);
+        }
+
+        // ====== LOGIKA AUDIO ======
         const audio = document.getElementById('bgMusic');
-        const overlay = document.getElementById('overlay');
         audio.volume = 1.0;
 
-        function playMusic() {
+        let triggered = false; // biar cuma trigger sekali
+
+        function startAudio() {
+            if (triggered) return;
+            triggered = true;
+
             const p = audio.play();
             if (p !== undefined) {
-                p.then(() => {
-                    overlay.style.display = 'none';
-                }).catch((err) => {
-                    console.warn('Play gagal:', err);
-                });
+                p.catch(err => console.warn('Audio gagal:', err));
             }
         }
 
-        // Coba autoplay dulu
-        window.addEventListener('load', () => {
-            const p = audio.play();
-            if (p !== undefined) {
-                p.then(() => {
-                    overlay.style.display = 'none'; // autoplay berhasil
-                }).catch(() => {
-                    // autoplay gagal, biarkan overlay
-                });
-            }
-        });
-
-        // Klik overlay untuk mainkan
-        overlay.addEventListener('click', playMusic, { once: true });
+        // ====== TRIGGER DI MANA SAJA ======
+        document.addEventListener('click', startAudio, { capture: true });
+        document.addEventListener('touchstart', startAudio, { capture: true, passive: true });
+        document.addEventListener('keydown', startAudio, { capture: true });
     </script>
 
 </body>
